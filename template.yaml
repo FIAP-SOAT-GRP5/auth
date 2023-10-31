@@ -8,19 +8,53 @@ Globals:
     Timeout: 3
 
 Resources:
-  FiapAuthFunction:
+  AuthFunction:
     Type: AWS::Serverless::Function
     Properties:
       Handler: index.handler
       Runtime: nodejs18.x
+      FunctionName: fiap-auth
+      Environment:
+        Variables:
+          JWT_SECRET: !Ref JWTSecretParameter
+          RDS_DATABASE: !Ref RDSDatabaseParameter
+          RDS_HOSTNAME: !Ref RDSHostnameParameter
+          RDS_PASSWORD: !Ref RDSPasswordParameter
+          RDS_PORT: !Ref RDSPortParameter
+          RDS_USERNAME: !Ref RDSUsernameParameter
       Architectures:
         - x86_64
       Events:
-        FiapAuth:
+        Auth:
           Type: Api
           Properties:
-            Path: /user
+            Path: /auth
             Method: post
+
+Parameters:
+  JWTSecretParameter:
+    Type: String
+    Default: ""
+
+  RDSDatabaseParameter:
+    Type: String
+    Default: ""
+
+  RDSHostnameParameter:
+    Type: String
+    Default: ""
+
+  RDSPasswordParameter:
+    Type: String
+    Default: ""
+
+  RDSPortParameter:
+    Type: Number
+    Default: "3306"
+
+  RDSUsernameParameter:
+    Type: String
+    Default: ""
 
 Outputs:
   FiapAuthApi:

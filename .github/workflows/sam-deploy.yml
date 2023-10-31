@@ -1,0 +1,74 @@
+name: Deploy Lambda using SAM
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8
+
+      - name: Set up Node.js 18.x
+        uses: actions/setup-node@v2
+        with:
+          node-version: '18.*'
+
+      - name: Install SAM CLI
+        run: |
+          python -m pip install --upgrade pip
+          pip install aws-sam-cli
+
+      - name: Install Node.js dependencies
+        run: npm install
+
+      - name: Configure AWS Credentials
+        run: |
+          aws configure set region us-east-1
+
+      - name: Set Environment Variables
+        run: |
+          echo 'export JWT_SECRET=valor_1' >> $GITHUB_ENV
+
+      - name: Package the app
+        run: |
+          sam package --template-file template.yaml --s3-bucket aws-sam-cli-managed-default-samclisourcebucket-dzcmderbpgut --region us-east-1 --config-env=github --debug
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: List directory contents
+        run: ls -al
+
+      - name: Deploy the app
+        run: |
+          echo "y" | sam deploy \
+            --template-file template.yaml \
+            --stack-name AuthLambda \
+            --capabilities CAPABILITY_IAM \
+            --region us-east-1 \
+            --parameter-overrides \
+              JWTSecretParameter=$JWT_SECRET \
+              RDSDatabaseParameter=$RDS_DATABASE \
+              RDSHostnameParameter=$RDS_HOSTNAME \
+              RDSPasswordParameter=$RDS_PASSWORD \
+              RDSPortParameter=$RDS_PORT \
+              RDSUsernameParameter=$RDS_USERNAME
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          RDS_DATABASE: ${{ secrets.RDS_DATABASE }}
+          RDS_HOSTNAME: ${{ secrets.RDS_HOSTNAME }}
+          RDS_PASSWORD: ${{ secrets.RDS_PASSWORD }}
+          RDS_PORT: ${{ secrets.RDS_PORT }}
+          RDS_USERNAME: ${{ secrets.RDS_USERNAME }}
