@@ -47,7 +47,7 @@ jobs:
           envkey_RDS_USERNAME: ${{ secrets.RDS_USER }}
 
       - name: Zip package
-        run: zip -j -r lambda.zip .
+        run: zip -r lambda.zip .
 
       - name: Deploy the app
         run: aws lambda update-function-code --function-name="fiap-auth" --zip-file=fileb://lambda.zip
