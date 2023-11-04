@@ -14,7 +14,6 @@ const knex = require('knex')({
 
 exports.handler = async (event, context) => {
     context.callbackWaitsForEmptyEventLoop = false;
-
     const { document } = event;
     const finalDocument = document || "12345678909";
     try {
