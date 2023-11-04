@@ -1,25 +1,33 @@
-const pool = require('./database');
-const { createToken } = require('./jwtOperations');
+require('dotenv').config();
+const { sign } = require('jsonwebtoken');
+
+const knex = require('knex')({
+    client: 'mysql',
+    connection: {
+        host: process.env.RDS_HOSTNAME,
+        port: process.env.RDS_PORT,
+        user: process.env.RDS_USERNAME,
+        password: process.env.RDS_PASSWORD,
+        database: process.env.RDS_DATABASE
+    }
+});
 
 exports.handler = async (event, context) => {
     context.callbackWaitsForEmptyEventLoop = false;
 
     const { document } = event;
     const finalDocument = document || "12345678909";
-    const sql = 'SELECT * FROM client WHERE document = ?';
-
     try {
-        const results = await new Promise((resolve, reject) => {
-            pool.query(sql, [finalDocument], (err, data) => {
-                if (err) reject(err);
-                resolve(data);
-            });
-        });
-
-        if (results && results.length > 0) {
-            const user = results[0];
-            const token = createToken(user.name, user.id);
-
+        const client = await knex.select("id", "name").from('client').where('document', finalDocument).first();
+        if (client) {
+            const token = sign({
+                username: client.name,
+                id: client.id
+            }, process.env.JWT_SECRET, {
+                expiresIn: '24h',
+                audience: 'fiap-auth',
+                subject: client.id.toString()
+            })
             return {
                 statusCode: 200,
                 headers: {
@@ -27,16 +35,14 @@ exports.handler = async (event, context) => {
                 },
                 body: JSON.stringify({ token })
             };
-        } else {
-            return {
-                statusCode: 404,
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ error: "User not found" })
-            };
         }
-
+        return {
+            statusCode: 404,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ error: "User not found" })
+        };
     } catch (err) {
         return {
             statusCode: 500,
