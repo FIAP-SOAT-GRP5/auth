@@ -1,4 +1,4 @@
-name: Deploy Lambda using SAM
+name: Deploy and update lambda
 
 on:
   push:
@@ -10,65 +10,44 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v2
-
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v2
+      - name: Configure aws credentials
+        uses: aws-actions/configure-aws-credentials@v4
         with:
-          python-version: 3.8
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Checkout
+        uses: actions/checkout@v3
 
       - name: Set up Node.js 18.x
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v4.0.0
         with:
           node-version: '18.*'
 
-      - name: Install SAM CLI
-        run: |
-          python -m pip install --upgrade pip
-          pip install aws-sam-cli
-
       - name: Install Node.js dependencies
         run: npm install
-
-      - name: Configure AWS Credentials
-        run: |
-          aws configure set region us-east-1
 
       - name: Set Environment Variables
         run: |
           echo 'export JWT_SECRET=valor_1' >> $GITHUB_ENV
 
-      - name: Package the app
-        run: |
-          sam package --template-file template.yaml --s3-bucket aws-sam-cli-managed-default-samclisourcebucket-dzcmderbpgut --region us-east-1 --config-env=github --debug
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      - name: Create .env file
+        uses: SpicyPizza/create-envfile@v2.0.2
+        with:
+          envkey_NODE_ENV: "production"
+          envkey_TZ: "America/São Paulo"
+          envkey_AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          envkey_AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          envkey_JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          envkey_RDS_DATABASE: ${{ vars.RDS_DATABASE }}
+          envkey_RDS_HOSTNAME: ${{ vars.RDS_HOST }}
+          envkey_RDS_PASSWORD: ${{ secrets.RDS_PASSWORD }}
+          envkey_RDS_PORT: ${{ secrets.RDS_PORT }}
+          envkey_RDS_USERNAME: ${{ secrets.RDS_USER }}
 
-      - name: List directory contents
-        run: ls -al
+      - name: Zip package
+        run: zip -j -r lambda.zip .
 
       - name: Deploy the app
-        run: |
-          echo "y" | sam deploy \
-            --template-file template.yaml \
-            --stack-name AuthLambda \
-            --capabilities CAPABILITY_IAM \
-            --region us-east-1 \
-            --parameter-overrides \
-              JWTSecretParameter=$JWT_SECRET \
-              RDSDatabaseParameter=$RDS_DATABASE \
-              RDSHostnameParameter=$RDS_HOSTNAME \
-              RDSPasswordParameter=$RDS_PASSWORD \
-              RDSPortParameter=$RDS_PORT \
-              RDSUsernameParameter=$RDS_USERNAME
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          RDS_DATABASE: ${{ secrets.RDS_DATABASE }}
-          RDS_HOSTNAME: ${{ secrets.RDS_HOSTNAME }}
-          RDS_PASSWORD: ${{ secrets.RDS_PASSWORD }}
-          RDS_PORT: ${{ secrets.RDS_PORT }}
-          RDS_USERNAME: ${{ secrets.RDS_USERNAME }}
+        run: aws lambda update-function-code --function-name="fiap-auth" --zip-file=fileb://lambda.zip
