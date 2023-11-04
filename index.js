@@ -2,7 +2,7 @@ require('dotenv').config();
 const { sign } = require('jsonwebtoken');
 
 const knex = require('knex')({
-    client: 'mysql',
+    client: 'mysql2',
     connection: {
         host: process.env.RDS_HOSTNAME,
         port: process.env.RDS_PORT,
