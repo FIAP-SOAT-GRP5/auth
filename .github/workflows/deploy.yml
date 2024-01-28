@@ -40,11 +40,7 @@ jobs:
           envkey_AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           envkey_AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           envkey_JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          envkey_RDS_DATABASE: ${{ vars.RDS_DATABASE }}
-          envkey_RDS_HOSTNAME: ${{ vars.RDS_HOST }}
-          envkey_RDS_PASSWORD: ${{ secrets.RDS_PASSWORD }}
-          envkey_RDS_PORT: ${{ secrets.RDS_PORT }}
-          envkey_RDS_USERNAME: ${{ secrets.RDS_USER }}
+          envkey_DATABASE_URL: ${{ vars.DATABASE_URL }}
 
       - name: Zip package
         run: zip -r lambda.zip .
