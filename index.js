@@ -1,23 +1,26 @@
 require('dotenv').config();
 const { sign } = require('jsonwebtoken');
+const mongoose = require('mongoose');
 
-const knex = require('knex')({
-    client: 'mysql2',
-    connection: {
-        host: process.env.RDS_HOSTNAME,
-        port: process.env.RDS_PORT,
-        user: process.env.RDS_USERNAME,
-        password: process.env.RDS_PASSWORD,
-        database: process.env.RDS_DATABASE
-    }
+mongoose.connect(process.env.DATABASE_URL, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+});
+
+const Client = mongoose.model('Client', {
+    id: Number,
+    name: String,
+    document: String
 });
 
 exports.handler = async (event, context) => {
     context.callbackWaitsForEmptyEventLoop = false;
     const { document } = event;
     const finalDocument = document || "12345678909";
+
     try {
-        const client = await knex.select("id", "name").from('client').where('document', finalDocument).first();
+        const client = await Client.findOne({ document: finalDocument }, 'id name');
+
         if (client) {
             const token = sign({
                 username: client.name,
@@ -26,7 +29,8 @@ exports.handler = async (event, context) => {
                 expiresIn: '24h',
                 audience: 'fiap-auth',
                 subject: client.id.toString()
-            })
+            });
+
             return {
                 statusCode: 200,
                 headers: {
@@ -35,6 +39,7 @@ exports.handler = async (event, context) => {
                 body: JSON.stringify({ token })
             };
         }
+
         return {
             statusCode: 404,
             headers: {
