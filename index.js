@@ -1,5 +1,6 @@
 require('dotenv').config();
 const { sign } = require('jsonwebtoken');
+const { v4: uuidv4 } = require('uuid');
 const dynamoose = require('dynamoose');
 
 const ClientSchema = new dynamoose.Schema({
