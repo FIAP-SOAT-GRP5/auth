@@ -1,14 +1,27 @@
 require('dotenv').config();
 const { sign } = require('jsonwebtoken');
-const mongoose = require('mongoose');
+const dynamoose = require('dynamoose');
 
-mongoose.connect(process.env.DATABASE_URL);
-
-const Client = mongoose.model('Client', {
-    id: Number,
-    name: String,
-    document: String
+const ClientSchema = new dynamoose.Schema({
+    _id: {
+        type: String,
+        hashKey: true,
+        default: uuidv4()
+    },
+    email: {
+        type: String
+    },
+    document: {
+        type: String
+    },
+    name: {
+        type: String
+    }
+}, {
+    timestamps: true
 });
+
+const CreatedClientSchema = dynamoose.model('Client', ClientSchema);
 
 exports.handler = async (event, context) => {
     context.callbackWaitsForEmptyEventLoop = false;
@@ -16,7 +29,12 @@ exports.handler = async (event, context) => {
     const finalDocument = document || "12345678909";
 
     try {
-        const client = await Client.findOne({ document: finalDocument });
+        const client = await CreatedClientSchema.scan('document').eq(`${finalDocument}`).exec().then((clients) => {
+            if (clients.length > 0) {
+                return clients[0];
+            }
+            return null;
+        });
 
         if (client) {
             const token = sign({
