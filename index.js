@@ -44,7 +44,7 @@ exports.handler = async (event, context) => {
             }, process.env.JWT_SECRET, {
                 expiresIn: '24h',
                 audience: 'fiap-auth',
-                subject: client.id.toString()
+                subject: client._id.toString()
             });
 
             return {
