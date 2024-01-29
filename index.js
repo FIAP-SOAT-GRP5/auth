@@ -2,10 +2,7 @@ require('dotenv').config();
 const { sign } = require('jsonwebtoken');
 const mongoose = require('mongoose');
 
-mongoose.connect(process.env.DATABASE_URL, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true
-});
+mongoose.connect(process.env.DATABASE_URL);
 
 const Client = mongoose.model('Client', {
     id: Number,
@@ -19,7 +16,7 @@ exports.handler = async (event, context) => {
     const finalDocument = document || "12345678909";
 
     try {
-        const client = await Client.findOne({ document: finalDocument }, 'id name');
+        const client = await Client.findOne({ document: finalDocument });
 
         if (client) {
             const token = sign({
