@@ -28,7 +28,6 @@ exports.handler = async (event, context) => {
     context.callbackWaitsForEmptyEventLoop = false;
     const { document } = event;
     const finalDocument = document || "12345678909";
-
     try {
         const client = await CreatedClientSchema.scan('document').eq(`${finalDocument}`).exec().then((clients) => {
             if (clients.length > 0) {
@@ -46,7 +45,6 @@ exports.handler = async (event, context) => {
                 audience: 'fiap-auth',
                 subject: client._id.toString()
             });
-
             return {
                 statusCode: 200,
                 headers: {
@@ -55,7 +53,6 @@ exports.handler = async (event, context) => {
                 body: JSON.stringify({ token })
             };
         }
-
         return {
             statusCode: 404,
             headers: {
